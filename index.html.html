@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>助教心得批改分配系統</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 28px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #111827;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .ta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .ta-item {
+            background-color: #f9fafb;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .ta-item label {
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .percent-total {
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            text-align: right;
+            color: #6b7280;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.btn-secondary {
+            background-color: #9ca3af;
+        }
+
+        button.btn-secondary:hover {
+            background-color: #6b7280;
+        }
+
+        .result-section {
+            border-top: 2px solid #e5e7eb;
+            padding-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background-color: #f9fafb;
+            font-size: 0.85rem;
+            color: #4b5563;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>助教心得批改分配系統</h1>
+
+    <div class="input-group">
+        <label for="totalCount">本次總心得數 (篇)</label>
+        <input type="number" id="totalCount" placeholder="請輸入心得總數，例如：70" min="1">
+    </div>
+
+    <div class="input-group">
+        <label for="lastEnd">品睿上次批改到的編號（若為第一次請填 0）</label>
+        <input type="number" id="lastEnd" placeholder="例如：0 或 5" min="0" value="0">
+    </div>
+
+    <label>各助教分配百分比 (%)</label>
+    <div class="ta-grid" id="taGrid"></div>
+    <div class="percent-total" id="percentTotal">目前總百分比：100%</div>
+
+    <div class="btn-group">
+        <button onclick="calculateDistribution()">開始分配</button>
+        <button class="btn-secondary" onclick="resetDefaults()">重設預設值</button>
+    </div>
+
+    <div class="result-section" id="resultSection" style="display: none;">
+        <h2>分配結果</h2>
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th>助教</th>
+                    <th>百分比</th>
+                    <th>分配份數</th>
+                    <th>批改區間 (編號)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // 依圖片設定預設名單與百分比
+    const defaultData = [
+        { name: "品睿", percent: 6 },
+        { name: "勻郁", percent: 13 },
+        { name: "昀澍", percent: 15 },
+        { name: "芷芃", percent: 15 },
+        { name: "品宸", percent: 16 },
+        { name: "宛郡", percent: 16 },
+        { name: "宇婕", percent: 19 }
+    ];
+
+    function initTAs() {
+        const grid = document.getElementById("taGrid");
+        grid.innerHTML = "";
+
+        defaultData.forEach((ta, index) => {
+            const item = document.createElement("div");
+            item.className = "ta-item";
+            item.innerHTML = `
+                <label for="ta_${index}">${ta.name}</label>
+                <input type="number" id="ta_${index}" value="${ta.percent}" step="0.1" min="0" max="100" oninput="updateTotalPercent()">
+            `;
+            grid.appendChild(item);
+        });
+        updateTotalPercent();
+    }
+
+    function updateTotalPercent() {
+        let sum = 0;
+        defaultData.forEach((_, index) => {
+            const val = parseFloat(document.getElementById(`ta_${index}`).value) || 0;
+            sum += val;
+        });
+        const totalElem = document.getElementById("percentTotal");
+        totalElem.textContent = `目前總百分比：${sum.toFixed(2)}%`;
+        if (Math.abs(sum - 100) > 0.01) {
+            totalElem.style.color = "#dc2626";
+        } else {
+            totalElem.style.color = "#6b7280";
+        }
+    }
+
+    function resetDefaults() {
+        initTAs();
+    }
+
+    function calculateDistribution() {
+        const totalCount = parseInt(document.getElementById("totalCount").value);
+        let startFrom = parseInt(document.getElementById("lastEnd").value) || 0;
+
+        if (isNaN(totalCount) || totalCount <= 0) {
+            alert("請輸入有效的總心得數！");
+            return;
+        }
+
+        const percentages = [];
+        let totalPercent = 0;
+        defaultData.forEach((_, index) => {
+            const p = parseFloat(document.getElementById(`ta_${index}`).value) || 0;
+            percentages.push(p);
+            totalPercent += p;
+        });
+
+        if (totalPercent <= 0) {
+            alert("分配百分比總和不能為 0！");
+            return;
+        }
+
+        // 最大餘數法計算整數份數
+        const normalized = percentages.map(p => (p / totalPercent) * totalCount);
+        const allocated = normalized.map(val => Math.floor(val));
+        const remainders = normalized.map((val, idx) => ({ index: idx, remainder: val - Math.floor(val) }));
+
+        let remainderTotal = totalCount - allocated.reduce((a, b) => a + b, 0);
+        remainders.sort((a, b) => b.remainder - a.remainder);
+
+        for (let i = 0; i < remainderTotal; i++) {
+            allocated[remainders[i].index]++;
+        }
+
+        // 產生各助教區間
+        const tbody = document.querySelector("#resultTable tbody");
+        tbody.innerHTML = "";
+
+        let currentNumber = startFrom + 1;
+
+        defaultData.forEach((ta, index) => {
+            const count = allocated[index];
+            let rangeStr = "-";
+            
+            if (count > 0) {
+                const rangeStart = currentNumber;
+                const rangeEnd = currentNumber + count - 1;
+                rangeStr = `${rangeStart} ~ ${rangeEnd}`;
+                currentNumber = rangeEnd + 1;
+            }
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>${ta.name}</strong></td>
+                <td>${percentages[index]}%</td>
+                <td>${count} 篇</td>
+                <td class="highlight">${rangeStr}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById("resultSection").style.display = "block";
+    }
+
+    window.onload = initTAs;
+</script>
+
+</body>
+</html>
