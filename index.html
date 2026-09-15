@@ -68,7 +68,7 @@
 
         .ta-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 12px;
             margin-bottom: 16px;
         }
@@ -163,7 +163,7 @@
     </div>
 
     <div class="input-group">
-        <label for="lastEnd">品睿上次批改到的編號（若為第一次請填 0）</label>
+        <label for="lastEnd">品宸上次批改到的編號（若為第一次請填 0）</label>
         <input type="number" id="lastEnd" placeholder="例如：0 或 5" min="0" value="0">
     </div>
 
@@ -193,15 +193,18 @@
 </div>
 
 <script>
-    // 依圖片設定預設名單與百分比
+    // 依附圖比率設定預設名單，並將品睿移至最後一位
     const defaultData = [
-        { name: "品睿", percent: 6 },
-        { name: "勻郁", percent: 13 },
-        { name: "昀澍", percent: 15 },
-        { name: "芷芃", percent: 15 },
-        { name: "品宸", percent: 16 },
-        { name: "宛郡", percent: 16 },
-        { name: "宇婕", percent: 19 }
+        { name: "勻郁", percent: 9 },
+        { name: "昀澍", percent: 9 },
+        { name: "芷芃", percent: 9 },
+        { name: "品宸", percent: 7 },
+        { name: "宛郡", percent: 11 },
+        { name: "宇婕", percent: 12 },
+        { name: "昕妤", percent: 13 },
+        { name: "沛瑜", percent: 13 },
+        { name: "宜蓁", percent: 13 },
+        { name: "品睿", percent: 4 }
     ];
 
     function initTAs() {
