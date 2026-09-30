@@ -164,7 +164,7 @@
 
     <div class="input-group">
         <label for="lastEnd">宜蓁上次批改到的編號（若為第一次請填 0）</label>
-        <input type="number" id="lastEnd" placeholder="例如：0 或 70" min="0" value="0">
+        <input type="number" id="lastEnd" placeholder="例如：0 或 23" min="0" value="0">
     </div>
 
     <label>各助教分配百分比 (%)</label>
@@ -275,45 +275,52 @@
             allocated[remainders[i].index]++;
         }
 
-        // 產生各助教區間（支援循環折返）
+        // 依「宜蓁」為起點依序分派號碼：宜蓁 -> 品睿 -> 勻郁 -> ... -> 沛瑜
+        const n = defaultData.length;
+        const yiZhenIndex = n - 1; // 宜蓁在陣列中的位置 (第 10 位，索引為 9)
+        const ranges = new Array(n);
+
+        let currentNumber = (startFrom % totalCount) + 1;
+
+        for (let step = 0; step < n; step++) {
+            const idx = (yiZhenIndex + step) % n;
+            const count = allocated[idx];
+
+            if (count === 0) {
+                ranges[idx] = "-";
+                continue;
+            }
+
+            const rangeStart = currentNumber;
+            const endRaw = currentNumber + count - 1;
+
+            if (endRaw <= totalCount) {
+                ranges[idx] = count === 1 ? `${rangeStart}` : `${rangeStart} ~ ${endRaw}`;
+                currentNumber = endRaw === totalCount ? 1 : endRaw + 1;
+            } else {
+                const firstEnd = totalCount;
+                const secondStart = 1;
+                const secondEnd = endRaw - totalCount;
+
+                const part1 = rangeStart === firstEnd ? `${rangeStart}` : `${rangeStart} ~ ${firstEnd}`;
+                const part2 = secondStart === secondEnd ? `${secondStart}` : `${secondStart} ~ ${secondEnd}`;
+
+                ranges[idx] = `${part1}, ${part2}`;
+                currentNumber = secondEnd + 1;
+            }
+        }
+
+        // 渲染表格（維持原始名單顯示順序：品睿、勻郁...宜蓁）
         const tbody = document.querySelector("#resultTable tbody");
         tbody.innerHTML = "";
 
-        // 將起始編號規範在 1 ~ totalCount 之間
-        let currentNumber = (startFrom % totalCount) + 1;
-
         defaultData.forEach((ta, index) => {
-            const count = allocated[index];
-            let rangeStr = "-";
-            
-            if (count > 0) {
-                const rangeStart = currentNumber;
-                const endRaw = currentNumber + count - 1;
-
-                if (endRaw <= totalCount) {
-                    // 未超過總數：單一連續區間
-                    rangeStr = count === 1 ? `${rangeStart}` : `${rangeStart} ~ ${endRaw}`;
-                    currentNumber = endRaw === totalCount ? 1 : endRaw + 1;
-                } else {
-                    // 超過總數：跨越折返，拆成兩段 (例如：68 ~ 70, 1 ~ 2)
-                    const firstEnd = totalCount;
-                    const secondStart = 1;
-                    const secondEnd = endRaw - totalCount;
-
-                    const part1 = rangeStart === firstEnd ? `${rangeStart}` : `${rangeStart} ~ ${firstEnd}`;
-                    const part2 = secondStart === secondEnd ? `${secondStart}` : `${secondStart} ~ ${secondEnd}`;
-
-                    rangeStr = `${part1}, ${part2}`;
-                    currentNumber = secondEnd + 1;
-                }
-            }
-
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td><strong>${ta.name}</strong></td>
                 <td>${percentages[index]}%</td>
-                <td>${count} 篇</td>
-                <td class="highlight">${rangeStr}</td>
+                <td>${allocated[index]} 篇</td>
+                <td class="highlight">${ranges[index]}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -326,4 +333,3 @@
 
 </body>
 </html>
-
