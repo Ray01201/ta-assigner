@@ -276,11 +276,12 @@
             allocated[remainders[i].index]++;
         }
 
-        // 產生各助教區間
+        // 產生各助教區間（支援循環折返）
         const tbody = document.querySelector("#resultTable tbody");
         tbody.innerHTML = "";
 
-        let currentNumber = startFrom + 1;
+        // 將起始編號規範在 1 ~ totalCount 之間
+        let currentNumber = (startFrom % totalCount) + 1;
 
         defaultData.forEach((ta, index) => {
             const count = allocated[index];
@@ -288,9 +289,24 @@
             
             if (count > 0) {
                 const rangeStart = currentNumber;
-                const rangeEnd = currentNumber + count - 1;
-                rangeStr = `${rangeStart} ~ ${rangeEnd}`;
-                currentNumber = rangeEnd + 1;
+                const endRaw = currentNumber + count - 1;
+
+                if (endRaw <= totalCount) {
+                    // 未超過總數：單一連續區間
+                    rangeStr = count === 1 ? `${rangeStart}` : `${rangeStart} ~ ${endRaw}`;
+                    currentNumber = endRaw === totalCount ? 1 : endRaw + 1;
+                } else {
+                    // 超過總數：跨越折返，拆成兩段 (例如：68 ~ 70, 1 ~ 2)
+                    const firstEnd = totalCount;
+                    const secondStart = 1;
+                    const secondEnd = endRaw - totalCount;
+
+                    const part1 = rangeStart === firstEnd ? `${rangeStart}` : `${rangeStart} ~ ${firstEnd}`;
+                    const part2 = secondStart === secondEnd ? `${secondStart}` : `${secondStart} ~ ${secondEnd}`;
+
+                    rangeStr = `${part1}, ${part2}`;
+                    currentNumber = secondEnd + 1;
+                }
             }
 
             const tr = document.createElement("tr");
@@ -308,6 +324,9 @@
 
     window.onload = initTAs;
 </script>
+
+</body>
+</html>
 
 </body>
 </html>
